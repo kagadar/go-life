@@ -5,12 +5,14 @@ import (
 )
 
 type mapBoard struct {
-	w, h  int
-	cells set.Set[Point]
+	w, h    int
+	state   State
+	cells   set.Set[Point]
+	weights map[Point]byte
 }
 
-func NewMapBoard(state [][]bool) Board {
-	board := &mapBoard{w: len(state[0]), h: len(state), cells: set.Set[Point]{}}
+func NewMapBoard(state State) Board {
+	board := &mapBoard{w: len(state[0]), h: len(state), state: state, cells: set.Set[Point]{}, weights: map[Point]byte{}}
 	for y, row := range state {
 		for x, cell := range row {
 			if cell {
@@ -29,17 +31,28 @@ func (m *mapBoard) height() int {
 	return m.h
 }
 
-func (m *mapBoard) State() [][]bool {
-	state := make([][]bool, m.height())
-	for i := 0; i < m.height(); i++ {
-		state[i] = make([]bool, m.width())
-	}
-	for p := range m.cells {
-		state[p.y][p.x] = true
-	}
-	return state
+func (m *mapBoard) State() State {
+	return m.state
 }
 
 func (m *mapBoard) Tick() {
-
+	for p := range m.cells {
+		neighbours(m, p, func(adj Point) {
+			m.weights[adj]++
+		})
+	}
+	for p, weight := range m.weights {
+		if m.cells.Has(p) {
+			if weight < 2 || weight > 3 {
+				delete(m.cells, p)
+				m.state[p.y][p.x] = false
+			}
+		} else {
+			if weight == 3 {
+				m.cells.Put(p)
+				m.state[p.y][p.x] = true
+			}
+		}
+		m.weights[p] = 0
+	}
 }
