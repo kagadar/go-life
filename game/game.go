@@ -1,36 +1,39 @@
 package game
 
 import (
+	"fmt"
+	"math/rand/v2"
+	"slices"
 	"strings"
 
-	"github.com/kagadar/go-pipeline/slices"
+	pslices "github.com/kagadar/go-pipeline/slices"
 )
 
 type Point struct {
 	x, y int
 }
 
-func clamp(b Board, p Point) Point {
+func clamp(w, h int, p Point) Point {
 	if p.x < 0 {
-		p.x = b.width() + p.x
+		p.x = w + p.x
 	} else {
-		p.x = p.x % b.width()
+		p.x = p.x % w
 	}
 	if p.y < 0 {
-		p.y = b.height() + p.y
+		p.y = h + p.y
 	} else {
-		p.y = p.y % b.height()
+		p.y = p.y % h
 	}
 	return p
 }
 
-func neighbours(b Board, p Point, fn func(Point)) {
+func neighbours(w, h int, p Point, fn func(Point)) {
 	for x := p.x - 1; x <= p.x+1; x++ {
 		for y := p.y - 1; y <= p.y+1; y++ {
 			if x == p.x && y == p.y {
 				continue
 			}
-			fn(clamp(b, Point{x, y}))
+			fn(clamp(w, h, Point{x, y}))
 		}
 	}
 }
@@ -38,8 +41,8 @@ func neighbours(b Board, p Point, fn func(Point)) {
 type State [][]bool
 
 func (s State) String() string {
-	return strings.Join(slices.Transform(s, func(row []bool) string {
-		return strings.Join(slices.Transform(row, func(cell bool) string {
+	return strings.Join(pslices.Transform(s, func(row []bool) string {
+		return strings.Join(pslices.Transform(row, func(cell bool) string {
 			if cell {
 				return "■"
 			} else {
@@ -49,10 +52,27 @@ func (s State) String() string {
 	}), "\n")
 }
 
-type Board interface {
-	width() int
-	height() int
+func (s State) Clone() State {
+	return pslices.Transform(s, func(row []bool) []bool {
+		return slices.Clone(row)
+	})
+}
 
-	State() State
+func RandomState(width, height int, chance float64) State {
+	state := make(State, height)
+	for y := range height {
+		state[y] = make([]bool, width)
+	}
+	for y := range height {
+		for x := range width {
+			state[y][x] = rand.Float64() <= chance
+		}
+	}
+	return state
+}
+
+type Board interface {
+	fmt.Stringer
+	Snapshot() State
 	Tick()
 }

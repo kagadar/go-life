@@ -6,7 +6,6 @@ import (
 	"embed"
 	"flag"
 	"fmt"
-	"math/rand/v2"
 	"os"
 	"os/signal"
 	"time"
@@ -24,10 +23,10 @@ const (
 var (
 	//go:embed initial_states/*
 	states   embed.FS
-	tickrate = flag.Duration("main_loop_tick_delay", 500*time.Millisecond, "How long to wait between each tick of the main loop.")
+	tickrate = flag.Duration("delay", 250*time.Millisecond, "How long to wait between each tick of the main loop.")
 	width    = flag.Int("width", 64, "Width of the play area when using a random seed")
 	height   = flag.Int("height", 32, "Height of the play area when using a random seed")
-	chance   = flag.Float64("chance", 0.15, "Initial chance for each cell to be alive")
+	chance   = flag.Float64("chance", 0.05, "Initial chance for each cell to be alive")
 	file     = flag.String("file", "", "If set, will load the named playfield from `initial_states` rather than generating one randomly")
 )
 
@@ -48,19 +47,6 @@ func loadState(name string) (state game.State) {
 	return state
 }
 
-func randomState(width, height int, chance float64) game.State {
-	state := make(game.State, height)
-	for y := range height {
-		state[y] = make([]bool, width)
-	}
-	for y := range height {
-		for x := range width {
-			state[y][x] = rand.Float64() <= chance
-		}
-	}
-	return state
-}
-
 func init() {
 	flag.Parse()
 }
@@ -70,9 +56,9 @@ func main() {
 	if *file != "" {
 		state = loadState(*file)
 	} else {
-		state = randomState(*width, *height, *chance)
+		state = game.RandomState(*width, *height, *chance)
 	}
-	board := game.NewSliceBoard(state)
+	board := game.NewBitBoard(state)
 	// Clear terminal
 	fmt.Printf("\033[2J\033[0;0HGo Life %s", version)
 	defer cursor.Show()
@@ -92,7 +78,7 @@ Min tick: %s
 Memory usage: %s`,
 			// Move cursor after title
 			"\033[2;0H",
-			board.State(),
+			board.String(),
 			// Clear old debug stats from terminal
 			"\033[0J",
 			stats.Duration(),

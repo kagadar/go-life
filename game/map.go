@@ -6,13 +6,12 @@ import (
 
 type mapBoard struct {
 	w, h    int
-	state   State
 	cells   set.Set[Point]
 	weights map[Point]byte
 }
 
 func NewMapBoard(state State) Board {
-	board := &mapBoard{w: len(state[0]), h: len(state), state: state, cells: set.Set[Point]{}, weights: map[Point]byte{}}
+	board := &mapBoard{w: len(state[0]), h: len(state), cells: set.Set[Point]{}, weights: map[Point]byte{}}
 	for y, row := range state {
 		for x, cell := range row {
 			if cell {
@@ -23,21 +22,26 @@ func NewMapBoard(state State) Board {
 	return board
 }
 
-func (m *mapBoard) width() int {
-	return m.w
+func (m *mapBoard) Snapshot() State {
+	out := make(State, m.h)
+	for y := range m.h {
+		out[y] = make([]bool, m.w)
+	}
+	for p := range m.cells {
+		out[p.y][p.x] = true
+	}
+	return out
 }
 
-func (m *mapBoard) height() int {
-	return m.h
-}
-
-func (m *mapBoard) State() State {
-	return m.state
+func (m *mapBoard) String() string {
+	return m.Snapshot().String()
 }
 
 func (m *mapBoard) Tick() {
 	for p := range m.cells {
-		neighbours(m, p, func(adj Point) {
+		//lint:ignore SA4018 a live cell with no neighbours should still be present in the weights.
+		m.weights[p] = m.weights[p]
+		neighbours(m.w, m.h, p, func(adj Point) {
 			m.weights[adj]++
 		})
 	}
@@ -45,14 +49,12 @@ func (m *mapBoard) Tick() {
 		if m.cells.Has(p) {
 			if weight < 2 || weight > 3 {
 				delete(m.cells, p)
-				m.state[p.y][p.x] = false
 			}
 		} else {
 			if weight == 3 {
 				m.cells.Put(p)
-				m.state[p.y][p.x] = true
 			}
 		}
-		m.weights[p] = 0
+		delete(m.weights, p)
 	}
 }

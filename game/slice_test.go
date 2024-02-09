@@ -5,13 +5,13 @@ import (
 )
 
 func TestSliceBoard(t *testing.T) {
-	HelperTestBoard(t, "sliceBoard", NewSliceBoard)
+	testBoard(t, NewSliceBoard)
 }
 
 func BenchmarkNewSliceBoard(b *testing.B) {
-	HelperBenchmarkNewBoard(b, NewSliceBoard)
+	benchmarkNew(b, NewSliceBoard)
 }
 
-func BenchmarkSliceBoardTick(b *testing.B) {
-	HelperBenchmarkBoardTick(b, NewSliceBoard)
+func BenchmarkSliceBoard(b *testing.B) {
+	benchmarkBoard(b, NewSliceBoard)
 }

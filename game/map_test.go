@@ -5,13 +5,13 @@ import (
 )
 
 func TestMapBoard(t *testing.T) {
-	HelperTestBoard(t, "mapBoard", NewMapBoard)
+	testBoard(t, NewMapBoard)
 }
 
 func BenchmarkNewMapBoard(b *testing.B) {
-	HelperBenchmarkNewBoard(b, NewMapBoard)
+	benchmarkNew(b, NewMapBoard)
 }
 
-func BenchmarkMapBoardTick(b *testing.B) {
-	HelperBenchmarkBoardTick(b, NewMapBoard)
+func BenchmarkMapBoard(b *testing.B) {
+	benchmarkBoard(b, NewMapBoard)
 }
