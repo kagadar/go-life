@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/kagadar/go-pipeline/maps"
@@ -112,6 +113,17 @@ var (
 			Point{2, 2},
 		)},
 	})
+	boards = []struct {
+		name       string
+		newBoardFn newBoardFn
+	}{
+		{"map", NewMapBoard},
+		{"slice1_unroll", NewSlice1_Unroll},
+		{"slice1_2d_unroll", NewSlice1_2D_Unroll},
+		{"slice1_2d", NewSlice1_2D},
+		{"slice2_2d", NewSlice2_2D},
+		{"slice2_2d_concurrent", NewSlice2_2D_Concurrent},
+	}
 )
 
 type newBoardFn func(State) Board
@@ -145,12 +157,13 @@ func benchmarkNew(b *testing.B, f newBoardFn) {
 	}
 }
 
-func benchmarkTick(b *testing.B, board Board) {
+func benchmarkTick(b *testing.B, board Board) time.Duration {
 	b.Helper()
 	b.ResetTimer()
 	for range b.N {
 		board.Tick()
 	}
+	return b.Elapsed() / time.Duration(b.N)
 }
 
 func benchmarkBoard(b *testing.B, f newBoardFn) {
@@ -174,16 +187,8 @@ const iterations = 25
 func TestDrift(t *testing.T) {
 	in := RandomState(25, 25, 0.4)
 	out := map[string][]State{}
-	for _, tc := range []struct {
-		name string
-		f    newBoardFn
-	}{
-		{"bit", NewBitBoard},
-		{"concurrent", NewConcurrentBoard},
-		{"map", NewMapBoard},
-		{"slice", NewSliceBoard},
-	} {
-		b := tc.f(in)
+	for _, tc := range boards {
+		b := tc.newBoardFn(in)
 		for range iterations {
 			b.Tick()
 			out[tc.name] = append(out[tc.name], b.Snapshot())
@@ -196,5 +201,47 @@ func TestDrift(t *testing.T) {
 				t.Errorf("Tick() produces different states between %s and %s", keys[i], keys[j])
 			}
 		}
+	}
+}
+
+func BenchmarkAllBoards(b *testing.B) {
+	type report struct {
+		name    string
+		results map[string]time.Duration
+	}
+	var rankings []report
+	b.Run("fixed benchmarks", func(b *testing.B) {
+		for _, tc := range benchmarks {
+			r := report{name: tc.name, results: map[string]time.Duration{}}
+			b.Run(r.name, func(b *testing.B) {
+				for _, board := range boards {
+					b.Run(board.name, func(b *testing.B) {
+						r.results[board.name] = benchmarkTick(b, board.newBoardFn(tc.state))
+					})
+				}
+			})
+			rankings = append(rankings, r)
+		}
+	})
+	b.Run("random benchmarks", func(b *testing.B) {
+		for chance := 0.05; chance < 1; chance += 0.05 {
+			r := report{name: fmt.Sprintf("random %.f%%", chance*100), results: map[string]time.Duration{}}
+			state := RandomState(1000, 1000, chance)
+			b.Run(r.name, func(b *testing.B) {
+				for _, board := range boards {
+					b.Run(board.name, func(b *testing.B) {
+						r.results[board.name] = benchmarkTick(b, board.newBoardFn(state))
+					})
+				}
+			})
+			rankings = append(rankings, r)
+		}
+	})
+	for _, report := range rankings {
+		fmt.Printf("%q rankings:\n", report.name)
+		maps.ValueSortedRange(report.results, func(name string, d time.Duration) error {
+			fmt.Printf("\t%q: %s\n", name, d)
+			return nil
+		})
 	}
 }

@@ -10,51 +10,51 @@ type mapBoard struct {
 	weights map[Point]byte
 }
 
-func NewMapBoard(state State) Board {
-	board := &mapBoard{w: len(state[0]), h: len(state), cells: set.Set[Point]{}, weights: map[Point]byte{}}
-	for y, row := range state {
+func NewMapBoard(s State) Board {
+	b := mapBoard{w: len(s[0]), h: len(s), cells: set.Set[Point]{}, weights: map[Point]byte{}}
+	for y, row := range s {
 		for x, cell := range row {
 			if cell {
-				board.cells.Put(Point{x, y})
+				b.cells.Put(Point{x, y})
 			}
 		}
 	}
-	return board
+	return &b
 }
 
-func (m *mapBoard) Snapshot() State {
-	out := make(State, m.h)
-	for y := range m.h {
-		out[y] = make([]bool, m.w)
+func (b *mapBoard) Snapshot() State {
+	out := make(State, b.h)
+	for y := range b.h {
+		out[y] = make([]bool, b.w)
 	}
-	for p := range m.cells {
+	for p := range b.cells {
 		out[p.y][p.x] = true
 	}
 	return out
 }
 
-func (m *mapBoard) String() string {
-	return m.Snapshot().String()
+func (b *mapBoard) String() string {
+	return b.Snapshot().String()
 }
 
-func (m *mapBoard) Tick() {
-	for p := range m.cells {
+func (b *mapBoard) Tick() {
+	for p := range b.cells {
 		//lint:ignore SA4018 a live cell with no neighbours should still be present in the weights.
-		m.weights[p] = m.weights[p]
-		neighbours(m.w, m.h, p, func(adj Point) {
-			m.weights[adj]++
+		b.weights[p] = b.weights[p]
+		neighbours(b.w, b.h, p, func(adj Point) {
+			b.weights[adj]++
 		})
 	}
-	for p, weight := range m.weights {
-		if m.cells.Has(p) {
+	for p, weight := range b.weights {
+		if b.cells.Has(p) {
 			if weight < 2 || weight > 3 {
-				delete(m.cells, p)
+				delete(b.cells, p)
 			}
 		} else {
 			if weight == 3 {
-				m.cells.Put(p)
+				b.cells.Put(p)
 			}
 		}
-		delete(m.weights, p)
+		delete(b.weights, p)
 	}
 }

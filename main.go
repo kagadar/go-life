@@ -58,7 +58,7 @@ func main() {
 	} else {
 		state = game.RandomState(*width, *height, *chance)
 	}
-	board := game.NewBitBoard(state)
+	board := game.NewSlice1_Unroll(state)
 	// Clear terminal
 	fmt.Printf("\033[2J\033[0;0HGo Life %s", version)
 	defer cursor.Show()
