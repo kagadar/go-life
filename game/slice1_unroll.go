@@ -1,12 +1,12 @@
 package game
 
-type slice1_Unroll struct {
+type slice1_unroll struct {
 	w, h, w2, wi, wh, hi, whi, whiu int
 	state                           []byte
 }
 
 func NewSlice1_Unroll(s State) Board {
-	b := slice1_Unroll{w: len(s[0]), h: len(s)}
+	b := slice1_unroll{w: len(s[0]), h: len(s)}
 
 	// precalculate useful numbers to navigate cells
 	b.w2, b.wi, b.wh, b.hi = b.w+b.w, b.w-1, b.w*b.h, b.h-1
@@ -24,7 +24,7 @@ func NewSlice1_Unroll(s State) Board {
 	return &b
 }
 
-func (b *slice1_Unroll) Snapshot() State {
+func (b *slice1_unroll) Snapshot() State {
 	out := make(State, b.h)
 	for y := range b.h {
 		out[y] = make([]bool, b.w)
@@ -35,11 +35,11 @@ func (b *slice1_Unroll) Snapshot() State {
 	return out
 }
 
-func (b *slice1_Unroll) String() string {
+func (b *slice1_unroll) String() string {
 	return b.Snapshot().String()
 }
 
-func (b *slice1_Unroll) Tick() {
+func (b *slice1_unroll) Tick() {
 	w, w2, wi, wh, hi, whi, whiu, state := b.w, b.w2, b.wi, b.wh, b.hi, b.whi, b.whiu, b.state
 	/*
 		00 01 02 03 04
@@ -161,6 +161,10 @@ func (b *slice1_Unroll) Tick() {
 		}
 	}
 	for i, cell := range state {
+		if cell < 3 {
+			state[i] = 0
+			continue
+		}
 		alive := cell&aliveMask > 0
 		weight := cell & weightMask
 		if weight == 3 || alive && weight == 2 {

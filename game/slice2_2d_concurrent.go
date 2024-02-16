@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-type slice2_2D_Concurrent struct {
+type slice2_2D_concurrent struct {
 	w, h       int
 	state      State
 	weights    [][]byte
@@ -15,7 +15,7 @@ type slice2_2D_Concurrent struct {
 }
 
 func NewSlice2_2D_Concurrent(s State) Board {
-	b := slice2_2D_Concurrent{w: len(s[0]), h: len(s), state: s.Clone(), weights: make([][]byte, len(s)), work: make(chan func(), max(runtime.NumCPU()-1, 1))}
+	b := slice2_2D_concurrent{w: len(s[0]), h: len(s), state: s.Clone(), weights: make([][]byte, len(s)), work: make(chan func(), max(runtime.NumCPU()-1, 1))}
 	for y := range b.h {
 		b.weights[y] = make([]byte, b.w)
 	}
@@ -29,15 +29,15 @@ func NewSlice2_2D_Concurrent(s State) Board {
 	return &b
 }
 
-func (b *slice2_2D_Concurrent) Snapshot() State {
+func (b *slice2_2D_concurrent) Snapshot() State {
 	return b.state.Clone()
 }
 
-func (b *slice2_2D_Concurrent) String() string {
+func (b *slice2_2D_concurrent) String() string {
 	return b.state.String()
 }
 
-func (b *slice2_2D_Concurrent) Tick() {
+func (b *slice2_2D_concurrent) Tick() {
 	workers := cap(b.work)
 	b.weightPool.Add(workers)
 	b.evolvePool.Add(workers)

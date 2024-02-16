@@ -1,21 +1,25 @@
 package game
 
-import (
-	"github.com/kagadar/go-set"
-)
+import "github.com/kagadar/go-set"
 
 type mapBoard struct {
-	w, h    int
-	cells   set.Set[Point]
-	weights map[Point]byte
+	w, h            int
+	living, updated set.Set[Point]
+	state           [][]byte
 }
 
 func NewMapBoard(s State) Board {
-	b := mapBoard{w: len(s[0]), h: len(s), cells: set.Set[Point]{}, weights: map[Point]byte{}}
+	b := mapBoard{w: len(s[0]), h: len(s)}
+	wh := b.w * b.h
+	b.living = make(set.Set[Point], wh)
+	b.updated = make(set.Set[Point], wh)
+	b.state = make([][]byte, b.h)
 	for y, row := range s {
+		b.state[y] = make([]byte, b.w)
 		for x, cell := range row {
 			if cell {
-				b.cells.Put(Point{x, y})
+				b.state[y][x] = aliveMask
+				b.living.Put(Point{x, y})
 			}
 		}
 	}
@@ -27,7 +31,7 @@ func (b *mapBoard) Snapshot() State {
 	for y := range b.h {
 		out[y] = make([]bool, b.w)
 	}
-	for p := range b.cells {
+	for p := range b.living {
 		out[p.y][p.x] = true
 	}
 	return out
@@ -38,23 +42,30 @@ func (b *mapBoard) String() string {
 }
 
 func (b *mapBoard) Tick() {
-	for p := range b.cells {
-		//lint:ignore SA4018 a live cell with no neighbours should still be present in the weights.
-		b.weights[p] = b.weights[p]
-		neighbours(b.w, b.h, p, func(adj Point) {
-			b.weights[adj]++
+	w, h, living, updated, state := b.w, b.h, b.living, b.updated, b.state
+	for p := range living {
+		updated.Put(p)
+		neighbours(w, h, p, func(adj Point) {
+			state[adj.y][adj.x]++
+			updated.Put(adj)
 		})
 	}
-	for p, weight := range b.weights {
-		if b.cells.Has(p) {
-			if weight < 2 || weight > 3 {
-				delete(b.cells, p)
-			}
-		} else {
-			if weight == 3 {
-				b.cells.Put(p)
-			}
+	clear(living)
+	for p := range updated {
+		row := state[p.y]
+		cell := row[p.x]
+		if cell < 3 {
+			row[p.x] = 0
+			continue
 		}
-		delete(b.weights, p)
+		alive := cell&aliveMask > 0
+		weight := cell & weightMask
+		if weight == 3 || alive && weight == 2 {
+			row[p.x] = aliveMask
+			living.Put(p)
+		} else {
+			row[p.x] = 0
+		}
 	}
+	clear(b.updated)
 }

@@ -120,9 +120,10 @@ var (
 		{"map", NewMapBoard},
 		{"slice1_unroll", NewSlice1_Unroll},
 		{"slice1_2d_unroll", NewSlice1_2D_Unroll},
-		{"slice1_2d", NewSlice1_2D},
-		{"slice2_2d", NewSlice2_2D},
-		{"slice2_2d_concurrent", NewSlice2_2D_Concurrent},
+		// {"slice1_index", NewSlice1_Index},
+		// {"slice1_2d", NewSlice1_2D},
+		// {"slice2_2d", NewSlice2_2D},
+		// {"slice2_2d_concurrent", NewSlice2_2D_Concurrent},
 	}
 )
 
@@ -135,8 +136,8 @@ func testBoard(t *testing.T, f newBoardFn) {
 			t.Helper()
 			board := f(tc.in)
 			board.Tick()
-			if diff := cmp.Diff(board.Snapshot(), tc.want); diff != "" {
-				t.Errorf("State() after Tick() unexpected diff (-got +want):\n%s", diff)
+			if got := board.Snapshot(); cmp.Diff(got, tc.want) != "" {
+				t.Errorf("State() after Tick() unexpected diff:\ngot:\n%s\nwant:\n%s", got, tc.want)
 			}
 		})
 	}

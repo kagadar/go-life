@@ -2,13 +2,13 @@ package game
 
 import "github.com/kagadar/go-pipeline/slices"
 
-type slice1_2D_Unroll struct {
+type slice1_2D_unroll struct {
 	w, h, wi, wii, hi int
 	state             [][]byte
 }
 
 func NewSlice1_2D_Unroll(s State) Board {
-	b := slice1_2D_Unroll{w: len(s[0]), h: len(s), state: make([][]byte, len(s))}
+	b := slice1_2D_unroll{w: len(s[0]), h: len(s), state: make([][]byte, len(s))}
 	b.wi, b.wii, b.hi = b.w-1, b.w-2, b.h-1
 	for y := range b.h {
 		b.state[y] = make([]byte, b.w)
@@ -21,7 +21,7 @@ func NewSlice1_2D_Unroll(s State) Board {
 	return &b
 }
 
-func (b *slice1_2D_Unroll) Snapshot() State {
+func (b *slice1_2D_unroll) Snapshot() State {
 	return slices.Transform(b.state, func(row []byte) []bool {
 		return slices.Transform(row, func(cell byte) bool {
 			return cell&aliveMask > 0
@@ -29,11 +29,11 @@ func (b *slice1_2D_Unroll) Snapshot() State {
 	})
 }
 
-func (b *slice1_2D_Unroll) String() string {
+func (b *slice1_2D_unroll) String() string {
 	return b.Snapshot().String()
 }
 
-func (b *slice1_2D_Unroll) Tick() {
+func (b *slice1_2D_unroll) Tick() {
 	wi, wii, hi, state := b.wi, b.wii, b.hi, b.state
 	row0, row1, rowhi, rowhiu := state[0], state[1], state[hi], state[hi-1]
 	/*
@@ -153,6 +153,10 @@ func (b *slice1_2D_Unroll) Tick() {
 	}
 	for _, row := range state {
 		for x, cell := range row {
+			if cell < 3 {
+				row[x] = 0
+				continue
+			}
 			alive := cell&aliveMask > 0
 			weight := cell & weightMask
 			if weight == 3 || alive && weight == 2 {
